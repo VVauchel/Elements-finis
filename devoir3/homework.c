@@ -23,7 +23,23 @@ femPoissonProblem *femPoissonCreate(const char *filename)
 
 void femPoissonFindBoundaryNodes(femPoissonProblem *theProblem)
 {
+    femGeo* theGeometry = theProblem->geo;  
+    femMesh* theEdges = theGeometry->theEdges; 
+    int nBoundary = 0;
     
+    //  A completer :-)
+
+
+    femDomain *theBoundary = malloc(sizeof(femDomain));
+    theGeometry->nDomains++;
+    theGeometry->theDomains = realloc(theGeometry->theDomains,theGeometry->nDomains*sizeof(femDomain*));
+    theGeometry->theDomains[theGeometry->nDomains-1] = theBoundary;
+    theBoundary->nElem = nBoundary;
+    theBoundary->elem = malloc(nBoundary*sizeof(int));
+    theBoundary->mesh = NULL;
+    sprintf(theBoundary->name,"Boundary");
+ 
+    // A completer :-)
 }
     
 # endif
