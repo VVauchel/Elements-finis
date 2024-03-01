@@ -21,40 +21,24 @@ femPoissonProblem *femPoissonCreate(const char *filename)
 # endif
 # ifndef NOPOISSONBOUNDARY
 
-void femPoissonFindBoundaryNodes(femPoissonProblem *theProblem)
-{
-    
+void femPoissonFindBoundaryNodes(femPoissonProblem *theProblem){
     femGeo* theGeometry = theProblem->geo;  
-    femMesh* theEdges = theGeometry->theEdges; 
+    femMesh* theEdges = theGeometry->theEdges;
+    int LocalNode = theEdges->nLocalNode;
     int nBoundary = 0;
     
-    //  A completer :-)
-    for(int i=0;i<theEdges->nElem;i++){
-        if(theEdges->elem[i*2+1]==0){
-            nBoundary++;
-        }
-    }
 
     femDomain *theBoundary = malloc(sizeof(femDomain));
     theGeometry->nDomains++;
     theGeometry->theDomains = realloc(theGeometry->theDomains,theGeometry->nDomains*sizeof(femDomain*));
-    theGeometry->theDomains[theGeometry->nDomains-1] = theBoundary;
-    theBoundary->nElem = nBoundary;
     theBoundary->elem = malloc(nBoundary*sizeof(int));
     theBoundary->mesh = NULL;
+    theGeometry->theDomains[theGeometry->nDomains-1] = theBoundary;
+    theBoundary->nElem = nBoundary;
     sprintf(theBoundary->name,"Boundary");
-
     
- 
-    // A completer :-)
-    int j=0;
-    for(int i=0;i<theEdges->nElem;i++){
-        if(theEdges->elem[i*2+1]==0){
-            theBoundary->elem[j]=theEdges->elem[i*2];
-            j++;
-        }
-    }
 }
+
     
 # endif
 # ifndef NOPOISSONFREE
@@ -156,16 +140,17 @@ void femPoissonSolve(femPoissonProblem *theProblem)
         free(y);
         free(map);
     }
-    femMesh *Edges = theProblem->geo->theEdges;
-    for(int iEdge=0;iEdge<Edges->nElem;iEdge++){
-        double value=0.0;
-        for (int i = 0; i < 2; i++){
-            femFullSystemConstrain(theProblem->system,Edges->elem[i],value);
-        }
-        
-    }
 
-    
+    // Apply boundary condition
+    femDomain *boundary = theProblem->geo->theDomains[theProblem->geo->nDomains-1];
+    int nBoundary = boundary->nElem;
+    printf("nBoundary ok= %d\n",nBoundary);
+    int *boundaryNodes = boundary->elem;
+
+    for (int i = 0; i < nBoundary; i++) {
+        int node = boundaryNodes[i];
+        femFullSystemConstrain(theProblem->system, node, 0.0);
+    }
     femFullSystemEliminate(theProblem->system);
 
 }
