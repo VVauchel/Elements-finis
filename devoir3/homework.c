@@ -26,42 +26,30 @@ void femPoissonFindBoundaryNodes(femPoissonProblem *theProblem)
     femGeo* theGeometry = theProblem->geo;  
     femMesh* theEdges = theGeometry->theEdges; 
     int nBoundary = 0;
-    int *edgecount = calloc(theEdges->nElem,sizeof(int));
-    for(int iEdge=0;iEdge<theEdges->nElem;iEdge++){
-        int node0=theEdges->elem[iEdge*2];
-        int node1=theEdges->elem[iEdge*2+1];
-        for (int itriangle = 0; itriangle < theGeometry->theElements->nElem; itriangle++)
-        {
-            int *elem = theGeometry->theElements->elem;
-            if ((elem[itriangle*3] == node0 && elem[itriangle*3+1] == node1) || (elem[itriangle*3] == node1 && elem[itriangle*3+1] == node0) || (elem[itriangle*3+1] == node0 && elem[itriangle*3+2] == node1) || (elem[itriangle*3+1] == node1 && elem[itriangle*3+2] == node0) || (elem[itriangle*3+2] == node0 && elem[itriangle*3] == node1) || (elem[itriangle*3+2] == node1 && elem[itriangle*3] == node0))
-            {
-                edgecount[iEdge]+=1;
-            }
-        }
+    //  A completer :-)
+    for (int i = 0; i < theEdges->nElem; i++)
+    {
+        nBoundary++;
     }
-    for (int i = 0; i < theEdges->nElem; i++) {
-        if (edgecount[i] == 1) {
-            nBoundary++;
-        }
-    }
+    
+    
 
     femDomain *theBoundary = malloc(sizeof(femDomain));
     theGeometry->nDomains++;
     theGeometry->theDomains = realloc(theGeometry->theDomains,theGeometry->nDomains*sizeof(femDomain*));
     theGeometry->theDomains[theGeometry->nDomains-1] = theBoundary;
     theBoundary->nElem = nBoundary;
-    printf("nBoundary= %d\n",nBoundary);
     theBoundary->elem = malloc(nBoundary*sizeof(int));
     theBoundary->mesh = NULL;
     sprintf(theBoundary->name,"Boundary");
-    
-    for (int i = 0, j = 0; i < theEdges->nElem; i++) {
-    if (edgecount[i] == 1) {
-        theBoundary->elem[j++] = theEdges->elem[i*2];
-        theBoundary->elem[j++] = theEdges->elem[i*2+1];
-        }
+ 
+    // A completer :-)
+    for (int i = 0; i < nBoundary; i++)
+    {
+        theBoundary->elem[i] = theEdges->elem[2*i];
     }
-    free(edgecount);
+    printf("first boundary node : %d\n", theBoundary->elem[0]);
+    printf("last boundary node : %d\n", theBoundary->elem[nBoundary-1]);
 }
 
 
@@ -170,12 +158,11 @@ void femPoissonSolve(femPoissonProblem *theProblem)
     // Apply boundary condition
     femDomain *boundary = theProblem->geo->theDomains[theProblem->geo->nDomains-1];
     int nBoundary = boundary->nElem;
-    printf("nBoundary ok= %d\n",nBoundary);
     int *boundaryNodes = boundary->elem;
 
     for (int i = 0; i < nBoundary; i++) {
         int node = boundaryNodes[i];
-        femFullSystemConstrain(theProblem->system, node, 0.0);
+        femFullSystemConstrain(theProblem->system, node, 0);
     }
     femFullSystemEliminate(theProblem->system);
 
