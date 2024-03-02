@@ -21,23 +21,49 @@ femPoissonProblem *femPoissonCreate(const char *filename)
 # endif
 # ifndef NOPOISSONBOUNDARY
 
-void femPoissonFindBoundaryNodes(femPoissonProblem *theProblem){
+void femPoissonFindBoundaryNodes(femPoissonProblem *theProblem)
+{
     femGeo* theGeometry = theProblem->geo;  
-    femMesh* theEdges = theGeometry->theEdges;
-    int LocalNode = theEdges->nLocalNode;
+    femMesh* theEdges = theGeometry->theEdges; 
     int nBoundary = 0;
-    
+    int *edgecount = calloc(theEdges->nElem,sizeof(int));
+    for(int iEdge=0;iEdge<theEdges->nElem;iEdge++){
+        int node0=theEdges->elem[iEdge*2];
+        int node1=theEdges->elem[iEdge*2+1];
+        for (int itriangle = 0; itriangle < theGeometry->theElements->nElem; itriangle++)
+        {
+            int *elem = theGeometry->theElements->elem;
+            if ((elem[itriangle*3] == node0 && elem[itriangle*3+1] == node1) || (elem[itriangle*3] == node1 && elem[itriangle*3+1] == node0) || (elem[itriangle*3+1] == node0 && elem[itriangle*3+2] == node1) || (elem[itriangle*3+1] == node1 && elem[itriangle*3+2] == node0) || (elem[itriangle*3+2] == node0 && elem[itriangle*3] == node1) || (elem[itriangle*3+2] == node1 && elem[itriangle*3] == node0))
+            {
+                edgecount[iEdge]+=1;
+            }
+        }
+    }
+    for (int i = 0; i < theEdges->nElem; i++) {
+        if (edgecount[i] == 1) {
+            nBoundary++;
+        }
+    }
 
     femDomain *theBoundary = malloc(sizeof(femDomain));
     theGeometry->nDomains++;
     theGeometry->theDomains = realloc(theGeometry->theDomains,theGeometry->nDomains*sizeof(femDomain*));
-    theBoundary->elem = malloc(nBoundary*sizeof(int));
-    theBoundary->mesh = NULL;
     theGeometry->theDomains[theGeometry->nDomains-1] = theBoundary;
     theBoundary->nElem = nBoundary;
+    printf("nBoundary= %d\n",nBoundary);
+    theBoundary->elem = malloc(nBoundary*sizeof(int));
+    theBoundary->mesh = NULL;
     sprintf(theBoundary->name,"Boundary");
     
+    for (int i = 0, j = 0; i < theEdges->nElem; i++) {
+    if (edgecount[i] == 1) {
+        theBoundary->elem[j++] = theEdges->elem[i*2];
+        theBoundary->elem[j++] = theEdges->elem[i*2+1];
+        }
+    }
+    free(edgecount);
 }
+
 
     
 # endif
@@ -116,7 +142,7 @@ void femPoissonSolve(femPoissonProblem *theProblem)
                 mesh->elem[nlocalNode*iElement]=mesh->elem[nlocalNode*iElement+2];
                 mesh->elem[nlocalNode*iElement+2]=node;
             }
-            jacobian=fabs(jacobian);
+            
             double *dphidx=malloc(space->n*sizeof(double));
             double *dphidy=malloc(space->n*sizeof(double));
             for(int i=0;i<space->n;i++){
